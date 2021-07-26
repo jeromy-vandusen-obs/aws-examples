@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Create a private S3 bucket that will be exposed as a website through a CDN distribution using OAI. Only
+             the bucket owner and the CloudFront distribution that attached to the OAI will have access to the bucket.
+             This will *not* use S3's built-in
+
+# Create a private S3 bucket that will be exposed as a website through a CDN distribution using OAI. Only the bucket
+# owner and the CloudFront distribution that is attached to the OAI will have access to the bucket. This will *not*
+# use S3's built-in functionality for exposing an S3 bucket as a website. When using that functionality with a custom
+# domain name, the bucket name must match the domain name. However, in this case, since it is not S3 that is exposing
+# the bucket, that limitation does not apply, so any valid bucket name will do.
+
+Parameters:
+  BucketName:
+    Description: Name of the bucket
+    Type: String
+
+Resources:
+  Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Ref BucketName
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref Bucket
+      PolicyDocument:
+        Id: PublicWebsitePolicy
+        Statement:
+          - Action: s3:GetObject
+            Effect: Allow
+            Principal:
+              CanonicalUser: !GetAtt CDNOriginAccessIdentity.S3CanonicalUserId
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref Bucket
+                - /*
+        Version: 2012-10-17
+
+Outputs:
+  Bucket:
+    Description: The new bucket ARN
+    Value: !GetAtt Bucket.Arn
