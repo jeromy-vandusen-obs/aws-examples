@@ -1,13 +1,13 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Create a private S3 bucket that will be exposed as a website through a CDN distribution using OAI. Only
-             the bucket owner and the CloudFront distribution that attached to the OAI will have access to the bucket.
-             This will *not* use S3's built-in
+Description: Create a private S3 bucket that will be exposed as a website through a CDN distribution using OAI.
 
 # Create a private S3 bucket that will be exposed as a website through a CDN distribution using OAI. Only the bucket
 # owner and the CloudFront distribution that is attached to the OAI will have access to the bucket. This will *not*
 # use S3's built-in functionality for exposing an S3 bucket as a website. When using that functionality with a custom
 # domain name, the bucket name must match the domain name. However, in this case, since it is not S3 that is exposing
 # the bucket, that limitation does not apply, so any valid bucket name will do.
+#
+# To create the CloudFront distribution, use the cloudfront template called cdn-oai-private-bucket.yml.
 
 Parameters:
   BucketName:
@@ -31,7 +31,7 @@ Resources:
     Properties:
       Bucket: !Ref Bucket
       PolicyDocument:
-        Id: PublicWebsitePolicy
+        Id: CDNAccessPolicy
         Statement:
           - Action: s3:GetObject
             Effect: Allow

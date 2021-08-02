@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Create a private S3 bucket.
+Description: Create an S3 bucket to host a public website.
 
 Parameters:
   BucketName:

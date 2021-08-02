@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Create a CloudFront distribution that will deliver content from a private S3 bucket using an OAI.
+
+# Create a CloudFront distribution for a website hosted in a private S3 bucket using an OAI to access the content.
+# The bucket must be created with a bucket policy that allows CloudFront to get objects from it. Use the S3 template
+# called private-oai-bucket.yml to create the bucket. The website will also exclusively use HTTPS, so there must
+# already be a certificate created for the domain. To create a certificate, use the tls-certificate.yml template for
+# ACM.
+#
+# Once all resources have been created, it will be necessary to add a CNAME record in DNS for 'www' to point to the
+# CloudFront distribution.
+
+Parameters:
+  BucketName:
+    Description: Name of the bucket that hosts the website
+    Type: String
+  DomainName:
+    Description: Domain name of the website
+    Type: String
+  CertificateArn:
+    Description: ARN of the TLS certificate for the website.
+    Type: String
+
+Resources:
+  CDNOriginAccessIdentity:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'CloudFront OAI for www.${DomainName} website.'
+
+  CDNDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+          - !Sub 'www.${DomainName}'
+        Comment: !Sub 'Distribution for www.${DomainName} website'
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: 60
+            ErrorCode: 404
+            ResponseCode: 404
+            ResponsePagePath: /404.html
+        DefaultCacheBehavior:
+          Compress: true
+          DefaultTTL: 86400
+          ForwardedValues:
+            QueryString: true
+          MaxTTL: 31536000
+          TargetOriginId: !Sub 'S3-${AWS::StackName}-root'
+          ViewerProtocolPolicy: 'redirect-to-https'
+        DefaultRootObject: index.html
+        Enabled: true
+        IPV6Enabled: true
+        Origins:
+          - DomainName: !Sub '${BucketName}.s3.amazonaws.com'
+            Id: !Sub S3-${AWS::StackName}-root
+            S3OriginConfig:
+              OriginAccessIdentity: !Join
+                - ''
+                - - origin-access-identity/cloudfront/
+                  - !Ref CDNOriginAccessIdentity
+        PriceClass: PriceClass_100
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          MinimumProtocolVersion: TLSv1.1_2016
+          SslSupportMethod: sni-only
+
+Outputs:
+  CloudFrontDistribution:
+    Description: CloudFront distribution
+    Value: !GetAtt CDNDistribution.DomainName

@@ -1,0 +1,21 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Create a wildcard TLS certificate for a domain.
+
+# In order to use the certificate for a website that uses a CloudFront distribution, the certificate must be created in
+# the us-east-1 region. The CloudFront distribution may be created in whatever region is preferred.
+
+Parameters:
+  DomainName:
+    Description: Domain name to create wildcard certificate for
+    Type: String
+
+Resources:
+  TlsCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Sub "*.${DomainName}"
+      ValidationMethod: DNS
+
+Outputs:
+  CertificateARN:
+    Value: !Ref TlsCertificate
